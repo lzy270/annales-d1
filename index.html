@@ -1,0 +1,314 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Annales triées D1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: grille de QCM optique — sélecteur d'épreuve, tuiles de score par matière, barre de tri collante, cases A–E cochées au stylo bleu */
+:root{
+  --bg:#f3f5f8; --paper:#ffffff; --ink:#18202e; --muted:#5b6577; --line:#d6dbe4;
+  --pen:#1d3fbf; --pen-soft:#e6ebfb;
+  --ok:#1f7a45; --ok-soft:#e3f3e8; --ko:#b42828; --ko-soft:#fbe7e5; --mid:#9a6400; --mid-soft:#fbf0dc;
+  --gen:#7a3fb0; --anat:#a3541c; --phy:#0d7d82; --sem:#1d4ed8; --his:#2f6a1f; --pha:#b42828;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Source Sans 3",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#10141c; --paper:#181e29; --ink:#e7ebf2; --muted:#9aa4b6; --line:#2b3444;
+  --pen:#8aa6ff; --pen-soft:#1f2a4a;
+  --ok:#5fcf8d; --ok-soft:#173326; --ko:#ff8a80; --ko-soft:#3a1d1d; --mid:#f0b65a; --mid-soft:#382b14;
+  --gen:#c39bf0; --anat:#f0a46a; --phy:#5fd0d4; --sem:#8aa6ff; --his:#8fd477; --pha:#ff8a80; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10141c; --paper:#181e29; --ink:#e7ebf2; --muted:#9aa4b6; --line:#2b3444;
+  --pen:#8aa6ff; --pen-soft:#1f2a4a;
+  --ok:#5fcf8d; --ok-soft:#173326; --ko:#ff8a80; --ko-soft:#3a1d1d; --mid:#f0b65a; --mid-soft:#382b14;
+  --gen:#c39bf0; --anat:#f0a46a; --phy:#5fd0d4; --sem:#8aa6ff; --his:#8fd477; --pha:#ff8a80; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;padding:0 16px}
+.wrap{max-width:860px;margin:0 auto;padding-block:20px 60px}
+header h1{font-family:var(--f-display);font-weight:700;font-size:clamp(1.6rem,4.5vw,2.3rem);line-height:1.1;margin:.2rem 0 .3rem;text-wrap:balance}
+.eyebrow{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+header p{margin:0;color:var(--muted);max-width:65ch}
+h2.sec{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:20px 0 8px;font-weight:700}
+.eps{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}
+.ep{flex:0 0 auto;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;text-align:left;font:inherit;color:inherit;min-width:122px}
+.ep[aria-pressed="true"]{border-color:var(--pen);box-shadow:inset 0 0 0 1px var(--pen);background:var(--pen-soft)}
+.ep b{display:block;font-size:.9rem}
+.ep span{display:block;font-size:.72rem;color:var(--muted);white-space:nowrap}
+.ep .pg{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--ink)}
+.score{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px}
+.sc{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.sc[aria-pressed="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.sc[disabled]{opacity:.45;cursor:default}
+.sc .lab{font-size:.78rem;font-weight:700;display:flex;align-items:center;gap:6px}
+.sc .lab i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.sc .val{font-family:var(--f-mono);font-size:1.05rem;font-variant-numeric:tabular-nums;margin-top:2px}
+.sc .sub{font-size:.75rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.bar{height:4px;background:var(--line);border-radius:2px;margin-top:6px;overflow:hidden}.bar b{display:block;height:100%;background:var(--ok)}
+.tools{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:10px 0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid var(--line);margin:16px 0}
+select,.btn{font:inherit;font-size:.9rem;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:7px 10px;min-height:38px}
+select{max-width:100%}
+.btn{cursor:pointer;font-weight:600}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--pen);border-color:var(--pen);color:var(--paper)}
+.btn:focus-visible,select:focus-visible,.opt:focus-visible,.sc:focus-visible,.ep:focus-visible,textarea:focus-visible{outline:2px solid var(--pen);outline-offset:2px}
+.count{margin-left:auto;font-size:.85rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.confirm{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.85rem}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:14px;scroll-margin-top:80px}
+.qh{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;margin-bottom:8px}
+.qn{font-family:var(--f-mono);font-weight:700;font-size:.95rem}
+.src{font-family:var(--f-mono);font-size:.75rem;color:var(--muted)}
+.tag{font-size:.75rem;font-weight:700;padding:1px 7px;border-radius:4px;color:var(--paper)}
+.chap{font-size:.8rem;color:var(--muted)}
+.res{margin-left:auto;font-family:var(--f-mono);font-size:.78rem;font-weight:700;padding:2px 8px;border-radius:4px}
+.res.ok{background:var(--ok-soft);color:var(--ok)}.res.ko{background:var(--ko-soft);color:var(--ko)}.res.mid{background:var(--mid-soft);color:var(--mid)}.res.na{background:var(--line);color:var(--muted)}
+.qt{margin:0 0 10px;font-weight:600}
+.negb{display:inline-block;font-size:.78rem;font-weight:700;color:var(--ko);background:var(--ko-soft);padding:2px 8px;border-radius:4px;margin-bottom:8px}
+figure{margin:0 0 12px;background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px;overflow-x:auto}
+figure img{max-width:100%;height:auto;display:block;margin:0 auto}
+figure img+img{margin-top:10px}
+figcaption{font-size:.75rem;color:#5b6577;margin-bottom:6px;font-family:var(--f-mono);text-transform:uppercase;letter-spacing:.06em}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opts.compact{flex-direction:row;flex-wrap:wrap}
+.opt{display:grid;grid-template-columns:30px 1fr;gap:10px;align-items:start;padding:8px 10px;border:1px solid var(--line);border-radius:6px;cursor:pointer;background:var(--paper);text-align:left;font:inherit;color:inherit;width:100%}
+.opts.compact .opt{width:auto;grid-template-columns:30px}
+.opts.compact.done .opt{width:100%;grid-template-columns:30px 1fr}
+.opt:hover:not([disabled]){border-color:var(--pen)}
+.box{width:26px;height:26px;border:2px solid var(--pen);border-radius:3px;display:grid;place-items:center;font-family:var(--f-mono);font-weight:700;font-size:.8rem;color:var(--pen);position:relative}
+.opt[aria-checked="true"] .box{color:transparent}
+.opt[aria-checked="true"] .box::before,.opt[aria-checked="true"] .box::after{content:"";position:absolute;width:28px;height:2.5px;background:var(--pen);border-radius:2px}
+.opt[aria-checked="true"] .box::before{transform:rotate(45deg)}.opt[aria-checked="true"] .box::after{transform:rotate(-45deg)}
+.opt[aria-checked="true"]{background:var(--pen-soft)}
+.ot{min-width:0;overflow-wrap:anywhere}
+.ex{display:block;font-size:.88rem;margin-top:4px;color:var(--muted)}
+.opt[disabled]{cursor:default}
+.opt.t{border-color:var(--ok)}
+.opt.t .verdict{color:var(--ok)}
+.opt.f .verdict{color:var(--muted)}
+.opt.err{background:var(--ko-soft);border-color:var(--ko)}
+.opt.err .verdict{color:var(--ko)}
+.opt.good.t{background:var(--ok-soft)}
+.opt.annul{opacity:.6}
+.verdict{font-family:var(--f-mono);font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-right:6px}
+.act{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;align-items:center}
+.note{margin-top:12px;padding:10px 12px;border-radius:6px;background:var(--bg);font-size:.9rem;white-space:pre-line;overflow-wrap:anywhere}
+.warn{margin-top:10px;padding:10px 12px;border-radius:6px;background:var(--mid-soft);color:var(--ink);font-size:.9rem;border-left:3px solid var(--mid)}
+.key{font-family:var(--f-mono);font-size:.85rem;color:var(--muted)}
+textarea{width:100%;font:inherit;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:8px;min-height:60px;resize:vertical}
+.qrocans{margin-top:10px;padding:10px 12px;border-radius:6px;background:var(--ok-soft)}
+.qrocans b{color:var(--ok)}
+.empty{text-align:center;color:var(--muted);padding:40px 0}
+.appt{display:inline-block;font-family:var(--f-mono,monospace);font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ko);border:1px solid var(--ko);border-radius:3px;padding:0 4px;margin-right:6px;vertical-align:1px}
+.more{display:flex;justify-content:center;margin:10px 0}
+footer{margin-top:24px;font-size:.8rem;color:var(--muted)}
+@media (max-width:520px){.count{margin-left:0;width:100%}}
+.note.ctx .cfig{display:block;max-width:100%;max-height:340px;margin-top:10px;border-radius:6px;background:#fff}
+figure img{background:#fff}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Tutorat Santé Bobigny · D1 · UE2 génétique et UE8 neuro</div>
+  <h1>Annales triées : génétique et neuro</h1>
+  <p>Choisis un chapitre (ou tous), coche tes réponses, valide : la correction détaillée du tutorat s'affiche item par item. Filtre par année avec le menu. Barème indicatif : 0 discordance = 1 pt, 1 = 0,5, 2 = 0,2, 3 et plus = 0.</p>
+</header>
+<h2 class="sec">UE2 · Génétique</h2>
+<div class="eps" id="eps"></div>
+<h2 class="sec">UE8 · Neuro (anatomie, physiologie, sémiologie, histo-embryo, pharmaco)</h2>
+<div class="eps" id="eps2"></div>
+<h2 class="sec">Score par matière</h2>
+<div class="score" id="score"></div>
+<div class="tools">
+  <select id="fChap" aria-label="Chapitre"></select>
+  <select id="fOrder" aria-label="Ordre">
+    <option value="sujet">Ordre du sujet</option>
+    <option value="chap">Trié par année</option>
+    <option value="rand">Aléatoire</option>
+  </select>
+  <select id="fState" aria-label="Filtre">
+    <option value="all">Toutes les questions</option>
+    <option value="todo">Pas encore faites</option>
+    <option value="err">Mes erreurs</option>
+  </select>
+  <span id="resetZone"></span>
+  <span class="count" id="count"></span>
+</div>
+<main id="list"></main>
+<footer>Sujets et corrections : annales classées par chapitre du Tutorat Santé Bobigny (D1, 2012-2025). Les schémas et arbres généalogiques des sujets ne sont pas repris : la correction les décrit quand c'est utile. Les réponses suivent leur correction. Les corrections fausses ou discutables sont expliquées dans un encadré orange après validation. Ta progression reste enregistrée dans ce navigateur.</footer>
+</div>
+
+<script>
+const MAT={gen:"Génétique",anat:"Neuro-anatomie",phy:"Neurophysiologie",sem:"Sémiologie neuro",his:"Histo-embryo",pha:"Pharmacologie"};
+const MORDER=Object.keys(MAT);
+let EP=[], ALL=[], S={};
+try{S=JSON.parse(localStorage.getItem("triD1")||"{}")}catch(e){S={}}
+try{const old=JSON.parse(localStorage.getItem("cbg1")||"null"); if(old&&!S._mig){/* ancienne page CBG1 : non migrée */}}catch(e){}
+function save(){try{localStorage.setItem("triD1",JSON.stringify(S))}catch(e){}}
+let fEp="g1", fMat="all", fChap="all", fOrder="sujet", fState="all", seed=Math.random(), shown=60;
+try{const p=JSON.parse(localStorage.getItem("triD1UI")||"{}"); if(p.ep) fEp=p.ep;}catch(e){}
+
+function letters(q){return Object.keys(q.o||{});}
+function discord(q,sel){let d=0; for(const l of letters(q)){ if(q.x0&&q.x0.includes(l))continue; if(q.a.includes(l)!==sel.includes(l)) d++;} return d;}
+function grade(q,s){
+  if(!s||!s.done) return null;
+  if(q.annul) return null;
+  if(q.t==="qroc") return s.self==null?null:(s.self?1:0);
+  const d=discord(q,s.sel||""); return d===0?1:d===1?.5:d===2?.2:0;
+}
+function fmt(x){return (Math.round(x*10)/10).toString().replace(".",",")}
+function inEp(q){return fEp==="all"||q.ep===fEp}
+
+function renderEps(){
+  const el1=document.getElementById("eps"), el2=document.getElementById("eps2"); el1.innerHTML=""; el2.innerHTML="";
+  const items=[{id:"all",title:"Toutes",date:"",sub:ALL.length+" questions"},...EP];
+  for(const e of items){
+    const el=(e.id==="all"||/^g/.test(e.id))?el1:el2;
+    const qs=ALL.filter(q=>e.id==="all"||q.ep===e.id);
+    const done=qs.filter(q=>S[q.id]&&S[q.id].done).length;
+    const b=document.createElement("button"); b.className="ep"; b.setAttribute("aria-pressed",fEp===e.id);
+    b.innerHTML=`<b>${e.title}</b><span>${e.id==="all"?"tous les chapitres":e.sub}</span><span class="pg">${done} / ${qs.length} faites</span>`;
+    b.onclick=()=>{fEp=e.id; fMat="all"; fChap="all"; shown=60; try{localStorage.setItem("triD1UI",JSON.stringify({ep:fEp}))}catch(_){}; buildChap(); render();};
+    el.appendChild(b);
+  }
+}
+function renderScore(){
+  const el=document.getElementById("score"); el.innerHTML="";
+  for(const k of ["all",...MORDER]){
+    const qs=ALL.filter(q=>inEp(q)&&(k==="all"||q.m===k));
+    let pts=0,done=0;
+    qs.forEach(q=>{const g=grade(q,S[q.id]); if(g!=null){pts+=g;done++;}});
+    const b=document.createElement("button"); b.className="sc"; b.setAttribute("aria-pressed",fMat===k);
+    if(!qs.length) b.disabled=true;
+    const col=k==="all"?"var(--ink)":`var(--${k})`;
+    b.innerHTML=`<div class="lab"><i style="background:${col}"></i>${k==="all"?"Toutes les matières":MAT[k]}</div>
+      <div class="val">${done?fmt(pts)+" / "+done:"—"}</div>
+      <div class="sub">${qs.filter(q=>S[q.id]&&S[q.id].done).length} / ${qs.length} faites${done?" · "+Math.round(pts/done*100)+" %":""}</div>
+      <div class="bar"><b style="width:${done?pts/done*100:0}%"></b></div>`;
+    b.onclick=()=>{fMat=k; fChap="all"; shown=60; buildChap(); render();};
+    el.appendChild(b);
+  }
+}
+function chapKey(q){return (fMat==="all"?MAT[q.m]+" · ":"")+q.c}
+function buildChap(){
+  const sel=document.getElementById("fChap");
+  const qs=ALL.filter(q=>inEp(q)&&(fMat==="all"||q.m===fMat));
+  const chaps=[...new Set(qs.slice().sort((a,b)=>MORDER.indexOf(a.m)-MORDER.indexOf(b.m)||b.c.localeCompare(a.c,"fr")).map(chapKey))];
+  sel.innerHTML=`<option value="all">Toutes les années</option>`+chaps.map(c=>`<option>${esc(c)}</option>`).join("");
+  sel.value=fChap;
+}
+function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
+function rnd(i){const x=Math.sin(i*9301+seed*49297)*233280;return x-Math.floor(x)}
+
+function filtered(){
+  let qs=ALL.filter(q=>inEp(q)&&(fMat==="all"||q.m===fMat)&&(fChap==="all"||chapKey(q)===fChap));
+  if(fState==="todo") qs=qs.filter(q=>!(S[q.id]&&S[q.id].done));
+  if(fState==="err") qs=qs.filter(q=>{const g=grade(q,S[q.id]); return g!=null&&g<1;});
+  if(fOrder==="chap") qs.sort((a,b)=>MORDER.indexOf(a.m)-MORDER.indexOf(b.m)||b.c.localeCompare(a.c,"fr")||a.gi-b.gi);
+  if(fOrder==="rand") qs.sort((a,b)=>rnd(a.gi)-rnd(b.gi));
+  return qs;
+}
+function render(){
+  renderEps(); renderScore();
+  const qs=filtered();
+  document.getElementById("count").textContent=qs.length+" question"+(qs.length>1?"s":"");
+  const list=document.getElementById("list"); list.innerHTML="";
+  if(!qs.length){list.innerHTML=`<div class="empty">Aucune question ici.${fState==="err"?" Pas d'erreur pour l'instant.":""}</div>`;return;}
+  qs.slice(0,shown).forEach(q=>list.appendChild(card(q)));
+  if(qs.length>shown){const d=document.createElement("div"); d.className="more"; d.appendChild(btn(`Afficher ${Math.min(60,qs.length-shown)} questions de plus`,"",()=>{shown+=60;render();})); list.appendChild(d);}
+}
+function card(q){
+  const s=S[q.id]||{sel:"",done:false}; const c=document.createElement("article"); c.className="card"; c.id=q.id;
+  const lbl=typeof q.n==="number"?"Q"+q.n:q.n;
+  let res="";
+  if(s.done){
+    if(q.annul) res=`<span class="res na">Annulée</span>`;
+    else if(q.t==="qroc") res=s.self==null?"":`<span class="res ${s.self?"ok":"ko"}">${s.self?"Juste":"Faux"}</span>`;
+    else{const g=grade(q,s), d=discord(q,s.sel||""); res=`<span class="res ${g===1?"ok":g>0?"mid":"ko"}">${d===0?"Juste":d+" discordance"+(d>1?"s":"")} · ${fmt(g)} pt</span>`;}
+  }
+  let h=`<div class="qh"><span class="qn">${lbl}</span>${fEp==="all"?`<span class="src">${q.epTitle}</span>`:""}<span class="tag" style="background:var(--${q.m})">${MAT[q.m]}</span><span class="chap">${esc(q.c)}</span>${q.annul&&!s.done?'<span class="res na">Annulée</span>':""}${res}</div>`;
+  if(q.neg) h+=`<div class="negb">Consigne : cocher les propositions FAUSSES</div>`;
+  if(q.ctx||(q.ctxim&&q.ctxim.length)) h+=`<div class="note ctx" style="margin:0 0 10px">${q.ctx?esc(q.ctx):""}${(q.ctxim||[]).map(u=>`<img src="${u}" loading="lazy" alt="Figure du dossier" class="cfig">`).join("")}</div>`;
+  h+=`<p class="qt">${esc(q.q)}</p>`;
+  if(q.imgs&&q.imgs.length) h+=`<figure><figcaption>Figure de l'énoncé</figcaption>${q.imgs.map(u=>`<img src="${u}" loading="lazy" alt="Figure de la question ${lbl}">`).join("")}</figure>`;
+  c.innerHTML=h;
+  if(q.t==="qroc"){
+    const ta=document.createElement("textarea"); ta.id="ta_"+q.id; ta.placeholder="Ta réponse…"; ta.value=s.txt||""; ta.disabled=!!s.done;
+    ta.oninput=()=>{S[q.id]={...(S[q.id]||{}),txt:ta.value}; save();};
+    c.appendChild(ta);
+    const act=document.createElement("div"); act.className="act";
+    if(!s.done){act.appendChild(btn("Voir la réponse","primary",()=>{S[q.id]={...(S[q.id]||{}),done:true,self:null}; save(); rerender(c,q);}));}
+    else{
+      const ans=document.createElement("div"); ans.className="qrocans"; ans.innerHTML=`<b>Réponse attendue :</b> ${esc(q.r)}`+(q.e?`<span class="ex">${esc(q.e)}</span>`:""); c.appendChild(ans);
+      if(!q.annul){
+        act.appendChild(btn("J'avais juste",s.self===true?"primary":"",()=>{S[q.id].self=true;save();rerender(c,q);}));
+        act.appendChild(btn("J'avais faux",s.self===false?"primary":"",()=>{S[q.id].self=false;save();rerender(c,q);}));
+      }
+      act.appendChild(btn("Recommencer","",()=>{delete S[q.id];save();rerender(c,q);}));
+    }
+    c.appendChild(act);
+    if(s.done&&q.w) c.insertAdjacentHTML("beforeend",`<div class="warn"><b>Remarque sur la correction.</b> ${esc(q.w)}</div>`);
+    return c;
+  }
+  const Ls=letters(q);
+  const hasText=Ls.some(l=>q.o[l]);
+  const opts=document.createElement("div"); opts.className="opts"+(hasText?"":" compact")+(s.done?" done":""); opts.setAttribute("role","group");
+  Ls.forEach(l=>{
+    const b=document.createElement("button"); b.type="button"; b.className="opt"; b.id=q.id+"_"+l;
+    b.setAttribute("role","checkbox"); b.setAttribute("aria-checked",(s.sel||"").includes(l)); b.setAttribute("aria-label","Proposition "+l);
+    const ann=q.x0&&q.x0.includes(l);
+    let ex="";
+    if(s.done&&!q.annul){
+      b.disabled=true;
+      const exp=q.e&&q.e[l]?esc(q.e[l]):"";
+      if(ann){ b.classList.add("annul"); ex=`<span class="ex"><span class="verdict">Item annulé</span>${exp}</span>`; }
+      else{
+        const t=q.a.includes(l), u=(s.sel||"").includes(l);
+        b.classList.add(t?"t":"f", t===u?"good":"err");
+        ex=`<span class="ex"><span class="verdict">${t?"À cocher":"Ne pas cocher"}${t!==u?(u?" · coché à tort":" · oublié"):""}</span>${exp}</span>`;
+      }
+    } else if(s.done) b.disabled=true;
+    b.innerHTML=`<span class="box">${l}</span>`+((q.o[l]||ex)?`<span class="ot">${q.app&&q.app.includes(l)?'<span class="appt">app</span>':""}${esc(q.o[l]||"")}${ex}</span>`:"");
+    if(!s.done) b.onclick=()=>{const cur=(S[q.id]&&S[q.id].sel)||""; const nx=cur.includes(l)?cur.replace(l,""):[...cur+l].sort().join(""); S[q.id]={sel:nx,done:false}; save(); b.setAttribute("aria-checked",nx.includes(l));};
+    opts.appendChild(b);
+  });
+  c.appendChild(opts);
+  const act=document.createElement("div"); act.className="act";
+  if(!s.done){
+    act.appendChild(btn(q.annul?"Voir la correction":"Valider","primary",()=>{S[q.id]={sel:(S[q.id]&&S[q.id].sel)||"",done:true}; save(); rerender(c,q);}));
+  }else{
+    act.appendChild(btn("Recommencer","",()=>{delete S[q.id];save();rerender(c,q);}));
+    if(!q.annul) act.insertAdjacentHTML("beforeend",`<span class="key">Réponse : ${q.a||"—"}${q.x0?" (item "+q.x0+" annulé)":""} · toi : ${s.sel||"aucune case"}</span>`);
+  }
+  c.appendChild(act);
+  if(s.done){
+    if(q.annul) c.insertAdjacentHTML("beforeend",`<div class="warn">Question annulée : elle ne compte pas dans le score.</div>`);
+    if(q.x) c.insertAdjacentHTML("beforeend",`<div class="note">${esc(q.x)}</div>`);
+    if(q.xf) c.insertAdjacentHTML("beforeend",`<div class="note"><b>Correction :</b> ${esc(q.xf)}</div>`);
+    if(q.cimgs&&q.cimgs.length) c.insertAdjacentHTML("beforeend",`<figure style="margin-top:12px"><figcaption>Schéma de la correction</figcaption>${q.cimgs.map(u=>`<img src="${u}" loading="lazy" alt="Correction de la question ${lbl}">`).join("")}</figure>`);
+    if(q.w) c.insertAdjacentHTML("beforeend",`<div class="warn"><b>Remarque sur la correction.</b> ${esc(q.w)}</div>`);
+  }
+  return c;
+}
+function btn(t,cls,fn){const b=document.createElement("button"); b.type="button"; b.className="btn "+cls; b.textContent=t; b.onclick=fn; return b;}
+function rerender(c,q){c.replaceWith(card(q)); renderEps(); renderScore();}
+
+document.getElementById("fChap").onchange=e=>{fChap=e.target.value; shown=60; render();};
+document.getElementById("fOrder").onchange=e=>{fOrder=e.target.value; seed=Math.random(); shown=60; render();};
+document.getElementById("fState").onchange=e=>{fState=e.target.value; shown=60; render();};
+function resetUI(){
+  const z=document.getElementById("resetZone");
+  z.innerHTML=`<button class="btn" id="reset">Effacer mes réponses</button>`;
+  document.getElementById("reset").onclick=()=>{
+    const scope=fEp==="all"?"de tous les chapitres":"de ce chapitre";
+    z.innerHTML=`<span class="confirm">Effacer tes réponses ${scope} ? <button class="btn primary" id="yes">Oui, effacer</button><button class="btn" id="no">Annuler</button></span>`;
+    document.getElementById("yes").onclick=()=>{ALL.filter(inEp).forEach(q=>delete S[q.id]); save(); resetUI(); render();};
+    document.getElementById("no").onclick=resetUI;
+  };
+}
+fetch("data.json").then(r=>r.json()).then(D=>{
+  EP=D; let gi=0;
+  D.forEach(e=>e.qs.forEach((q,i)=>{q.ep=e.id; q.epTitle=e.title; q.id=e.id+"_"+i; q.gi=gi++; ALL.push(q);}));
+  if(fEp!=="all"&&!EP.some(e=>e.id===fEp)) fEp=EP[0].id;
+  resetUI(); buildChap(); render();
+}).catch(()=>{document.getElementById("list").innerHTML='<div class="empty">Impossible de charger les questions. Recharge la page.</div>';});
+</script>
