@@ -104,6 +104,23 @@ figcaption{font-size:.78rem;color:#6c7587;margin-bottom:8px;font-weight:600}
 .lock{margin-top:16px;padding:12px 16px;border-radius:12px;background:var(--pen-soft);font-size:.85rem;color:var(--ink)}
 .key{font-size:.9rem;font-weight:700;color:var(--muted)}
 .empty{text-align:center;color:var(--muted);padding:50px 0}
+.seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;border-radius:999px;padding:6px 16px;font-weight:700;font-size:.88rem;color:var(--muted);cursor:pointer;min-height:32px}
+.seg button[aria-pressed="true"]{background:var(--pen);color:#fff}
+.tile.val{background:var(--pen);border-color:var(--pen);color:#fff}
+.legend i.v{background:var(--pen);border-color:var(--pen)}
+.btn.wide{width:100%;margin-top:14px}
+.card.start h2{margin:0 0 10px;font-size:1.5rem;font-weight:800}
+.card.start .lead{font-size:1.02rem;color:var(--muted);margin:0 0 14px}
+.card.start ul{margin:0 0 16px;padding-left:20px;line-height:1.8}
+.card.start .scope{margin:0;padding:12px 16px;background:var(--bg);border-radius:12px}
+.card.start .big{display:flex;align-items:baseline;gap:8px;margin:6px 0 16px}
+.card.start .big b{font-size:3rem;font-weight:800;color:var(--pen);line-height:1}
+.card.start .big span{font-size:1.2rem;color:var(--muted);font-weight:700}
+.card.start .big em{margin-left:12px;font-style:normal;font-weight:800;font-size:1.2rem}
+.card.start .stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+select:disabled{opacity:.5}
+.stats .res{margin-left:0}
 .navtoggle{display:none}
 footer{max-width:1180px;margin:0 auto;padding:0 16px 30px;font-size:.78rem;color:var(--muted)}
 @media (max-width:520px){.top h1 small{display:none}.top{gap:8px}.tbtn,.chrono{padding:5px 10px;font-size:.8rem}}
@@ -121,6 +138,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 16px 30px;font-size:.78rem;color
 <div class="top">
   <h1>Annales D1<small>UE2 génétique · UE8 neuro</small></h1>
   <span class="sp"></span>
+  <div class="seg" role="group" aria-label="Mode"><button id="mTrain" type="button" aria-pressed="true">Entraînement</button><button id="mExam" type="button" aria-pressed="false">Examen</button></div>
   <button class="tbtn navtoggle" id="navtoggle" type="button">Questions</button>
   <button class="chrono" id="chrono" type="button" title="Chrono : clic pour démarrer ou mettre en pause">⏱ 00:00</button>
   <span id="resetZone"></span>
@@ -143,17 +161,20 @@ footer{max-width:1180px;margin:0 auto;padding:0 16px 30px;font-size:.78rem;color
   <aside class="nav" id="nav"></aside>
   <main id="main"></main>
 </div>
-<footer>Barème : 0 discordance = 1 pt, 1 = 0,5, 2 = 0,2, 3 et plus = 0. Les questions isolées restent modifiables après validation ; dans un dossier progressif (DP) tu peux revenir sur une question validée mais plus changer ta réponse. Raccourcis : A à E pour cocher, Entrée pour valider, flèches gauche et droite pour naviguer. Les corrections fausses ou discutables sont signalées dans un encadré orange. Ta progression reste enregistrée dans ce navigateur.</footer>
+<footer>Deux modes : <b>Entraînement</b> (correction après chaque validation) et <b>Examen</b> (chrono, tu valides et tu passes à la suite, correction seulement à la fin). Barème : 0 discordance = 1 pt, 1 = 0,5, 2 = 0,2, 3 et plus = 0. Les questions isolées restent modifiables après validation ; dans un dossier progressif (DP) tu peux revenir sur une question validée mais plus changer ta réponse. Raccourcis : A à E pour cocher, Entrée pour valider, flèches gauche et droite pour naviguer. Les corrections fausses ou discutables sont signalées dans un encadré orange. Ta progression reste enregistrée dans ce navigateur.</footer>
 
 <script>
 const MAT={gen:"Génétique",anat:"Neuro-anatomie",phy:"Neurophysiologie",sem:"Sémiologie neuro",his:"Histo-embryo",pha:"Pharmacologie"};
 const GRP={g:"UE2 · Génétique",a:"UE8 · Neuro-anatomie",p:"UE8 · Neurophysiologie",s:"UE8 · Sémiologie",h:"UE8 · Histo-embryo et organes des sens",m:"UE8 · Pharmacologie"};
-let EP=[],ALL=[],L=[],cur=0,S={};
+let EP=[],ALL=[],BY={},L=[],cur=0,S={},E=null,V="q",endAsk=false;
 try{S=JSON.parse(localStorage.getItem("triD1")||"{}")}catch(e){S={}}
-let UI={ep:"all",yr:"all",st:"all",ord:"sujet",id:null,seed:Math.random()};
+try{E=JSON.parse(localStorage.getItem("triD1Exam")||"null")}catch(e){E=null}
+let UI={ep:"all",yr:"all",st:"all",ord:"sujet",id:null,mode:"train",seed:Math.random()};
 try{Object.assign(UI,JSON.parse(localStorage.getItem("triD1UI2")||"{}"))}catch(e){}
+let M=UI.mode==="exam"?"exam":"train";
 function save(){try{localStorage.setItem("triD1",JSON.stringify(S))}catch(e){}}
-function saveUI(){try{localStorage.setItem("triD1UI2",JSON.stringify({ep:UI.ep,yr:UI.yr,st:UI.st,ord:UI.ord,id:UI.id}))}catch(e){}}
+function saveE(){try{if(E){E.el=elapsed("exam");localStorage.setItem("triD1Exam",JSON.stringify(E))}else localStorage.removeItem("triD1Exam")}catch(e){}}
+function saveUI(){try{localStorage.setItem("triD1UI2",JSON.stringify({ep:UI.ep,yr:UI.yr,st:UI.st,ord:UI.ord,id:UI.id,mode:M}))}catch(e){}}
 const $=id=>document.getElementById(id);
 function esc(s){return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")}
 function fmt(x){return (Math.round(x*10)/10).toString().replace(".",",")}
@@ -162,14 +183,38 @@ function isDP(q){return /^DP/.test(q.n)}
 function discord(q,sel){let d=0;for(const l of letters(q)){if(q.x0&&q.x0.includes(l))continue;if(q.a.includes(l)!==sel.includes(l))d++}return d}
 function grade(q,s){
   if(!s||!s.done)return null;
-  const sel=s.sel||"", Ls=letters(q).filter(l=>!(q.x0&&q.x0.includes(l)));
+  const sel=s.sel||"",Ls=letters(q).filter(l=>!(q.x0&&q.x0.includes(l)));
   if(Ls.length>5){const good=[...q.a].filter(l=>Ls.includes(l));if(!good.length)return null;return good.filter(l=>sel.includes(l)).length/good.length}
   const d=discord(q,sel);return d===0?1:d===1?.5:d===2?.2:0;
 }
-function cls(q){const s=S[q.id];if(!s)return"";if(s.done){const g=grade(q,s);return g===1?"ok":g>0?"mid":"ko"}return s.sel?"sel":""}
 function unitKey(q){return isDP(q)?q.ep+"|"+q.c+"|"+q.n.split("·")[0].trim():q.id}
+const fin=()=>M==="exam"&&!!E&&E.fin;
 
-/* ---------- filtres ---------- */
+/* ----- état d'une question selon le mode ----- */
+function st(q){return(M==="exam"?(E&&E.a[q.id]):S[q.id])||{sel:"",done:false}}
+function setSt(q,v){if(M==="exam"){E.a[q.id]=v;saveE()}else{S[q.id]=v;save()}}
+function reveal(q){return M==="exam"?fin():st(q).done}
+function locked(q){return M==="exam"?(fin()||(isDP(q)&&st(q).done)):st(q).done}
+function gradeOf(q){const s=st(q);if(M==="exam")return fin()?grade(q,{sel:s.sel||"",done:true}):null;return grade(q,s)}
+function cls(q){
+  const s=st(q);
+  if(M==="exam"&&!fin())return s.done?"val":(s.sel?"sel":"");
+  if(reveal(q)){const g=gradeOf(q);return g===1?"ok":g>0?"mid":"ko"}
+  return s.sel?"sel":"";
+}
+
+/* ----- chronos ----- */
+const CK={train:{acc:0,t0:0,run:false},exam:{acc:0,t0:0,run:false}};
+function elapsed(k){const c=CK[k];return c.acc+(c.run?Date.now()-c.t0:0)}
+function ckStart(k){const c=CK[k];if(!c.run){c.t0=Date.now();c.run=true}}
+function ckStop(k){const c=CK[k];if(c.run){c.acc+=Date.now()-c.t0;c.run=false}}
+function clock(ms){const s=Math.floor(ms/1000),h=Math.floor(s/3600);return(h?h+":":"")+String(Math.floor(s%3600/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
+function tick(){const k=M;$("chrono").textContent="⏱ "+clock(elapsed(k));$("chrono").classList.toggle("run",CK[k].run)}
+setInterval(tick,500);
+$("chrono").onclick=()=>{if(M==="exam")return;CK.train.run?ckStop("train"):ckStart("train");tick()};
+$("chrono").oncontextmenu=e=>{e.preventDefault();if(M==="exam")return;CK.train.acc=0;CK.train.t0=Date.now();tick()};
+
+/* ----- filtres ----- */
 function buildFilters(){
   const c=$("fChap");let h=`<option value="all">Tous les chapitres (${ALL.length})</option>`;
   for(const k of Object.keys(GRP)){
@@ -184,92 +229,126 @@ function buildFilters(){
   if(UI.yr!=="all"&&!yrs.includes(UI.yr))UI.yr="all";
   $("fYear").value=UI.yr;$("fState").value=UI.st;$("fOrder").value=UI.ord;
 }
+function syncFilters(){const d=M==="exam"&&!!E;["fChap","fYear","fState","fOrder"].forEach(id=>$(id).disabled=d);$("fState").style.display=M==="exam"?"none":"";}
 function rnd(i){const x=Math.sin(i*9301+UI.seed*49297)*233280;return x-Math.floor(x)}
-function compute(){
+function filteredList(){
   let qs=ALL.filter(q=>(UI.ep==="all"||q.ep===UI.ep)&&(UI.yr==="all"||q.c===UI.yr));
-  if(UI.st==="todo")qs=qs.filter(q=>!(S[q.id]&&S[q.id].done));
-  if(UI.st==="err")qs=qs.filter(q=>{const g=grade(q,S[q.id]);return g!=null&&g<1});
+  if(UI.st==="todo"&&M==="train")qs=qs.filter(q=>!(S[q.id]&&S[q.id].done));
+  if(UI.st==="err"&&M==="train")qs=qs.filter(q=>{const g=grade(q,S[q.id]);return g!=null&&g<1});
   if(UI.ord==="annee")qs=qs.slice().sort((a,b)=>b.c.localeCompare(a.c,"fr")||a.gi-b.gi);
   if(UI.ord==="rand"){
     const u=new Map();qs.forEach(q=>{const k=unitKey(q);if(!u.has(k))u.set(k,[]);u.get(k).push(q)});
     qs=[...u.values()].sort((a,b)=>rnd(a[0].gi)-rnd(b[0].gi)).flat();
   }
-  L=qs;
+  return qs;
+}
+function compute(){
+  L=(M==="exam"&&E)?E.ids.map(id=>BY[id]).filter(Boolean):filteredList();
   const i=UI.id?L.findIndex(q=>q.id===UI.id):-1;
-  cur=i>=0?i:0;
-  UI.id=L[cur]?L[cur].id:null;
+  cur=i>=0?i:0;UI.id=L[cur]?L[cur].id:null;
 }
 function refilter(){compute();saveUI();renderAll()}
 
-/* ---------- rendu ---------- */
-function renderAll(){renderNav();renderQ()}
+/* ----- rendu ----- */
+function renderAll(){syncFilters();renderMode();renderNav();renderMain();tick()}
+function renderMode(){$("mTrain").setAttribute("aria-pressed",M==="train");$("mExam").setAttribute("aria-pressed",M==="exam");$("chrono").title=M==="exam"?"Chrono de l'épreuve":"Chrono : clic pour démarrer ou mettre en pause (clic droit : remise à zéro)"}
 function renderNav(){
   const nav=$("nav");
-  let pts=0,done=0;L.forEach(q=>{const g=grade(q,S[q.id]);if(g!=null){pts+=g;done++}});
-  const fait=L.filter(q=>S[q.id]&&S[q.id].done).length;
-  nav.innerHTML=`<h2>Questions</h2>
-  <div class="sum"><b>${fait} / ${L.length}</b> validées${done?` · <b>${fmt(pts)}</b> pts · ${Math.round(pts/done*100)} %`:""}</div>
-  <div class="pbar"><b style="width:${L.length?fait/L.length*100:0}%"></b></div>
-  <div class="grid" id="grid"></div>
-  <div class="legend"><span><i></i>Carré : question isolée</span><span><i class="c"></i>Rond : dossier (DP)</span><span><i class="s"></i>Cochée</span><span><i class="o"></i>Juste</span><span><i class="m"></i>Partielle</span><span><i class="k"></i>Fausse</span></div>`;
+  if(M==="exam"&&!E){nav.innerHTML=`<h2>Questions</h2><div class="sum"><b>${L.length}</b> question${L.length>1?"s":""} prêtes pour l'épreuve</div><p class="hint">Les numéros apparaissent ici une fois l'épreuve lancée.</p>`;return}
+  let sum="";
+  if(M==="exam"&&!fin()){
+    const v=L.filter(q=>st(q).done).length;
+    sum=`<div class="sum"><b>${v} / ${L.length}</b> validées</div><div class="pbar"><b style="width:${L.length?v/L.length*100:0}%"></b></div>`;
+  }else{
+    let pts=0,done=0;L.forEach(q=>{const g=gradeOf(q);if(g!=null){pts+=g;done++}});
+    const fait=M==="exam"?L.length:L.filter(q=>S[q.id]&&S[q.id].done).length;
+    sum=`<div class="sum"><b>${fait} / ${L.length}</b> ${M==="exam"?"corrigées":"validées"}${done?` · <b>${fmt(pts)}</b> pts · ${Math.round(pts/done*100)} %`:""}</div><div class="pbar"><b style="width:${L.length?fait/L.length*100:0}%"></b></div>`;
+  }
+  const examRun=M==="exam"&&!fin();
+  nav.innerHTML=`<h2>Questions</h2>${sum}<div class="grid" id="grid"></div>
+  <div class="legend"><span><i></i>Carré : question isolée</span><span><i class="c"></i>Rond : dossier (DP)</span>${examRun?'<span><i class="s"></i>Cochée</span><span><i class="v"></i>Validée</span>':'<span><i class="s"></i>Cochée</span><span><i class="o"></i>Juste</span><span><i class="m"></i>Partielle</span><span><i class="k"></i>Fausse</span>'}</div>
+  <div id="endzone"></div>`;
   const g=nav.querySelector("#grid");
   L.forEach((q,i)=>{
     const b=document.createElement("button");b.type="button";
-    b.className="tile "+(isDP(q)?"dp ":"")+cls(q)+(i===cur?" cur":"");
+    b.className="tile "+(isDP(q)?"dp ":"")+cls(q)+(i===cur&&V==="q"?" cur":"");
     b.textContent=i+1;b.title=(isDP(q)?q.n+" · ":"")+q.c;
     b.setAttribute("aria-label","Question "+(i+1)+(isDP(q)?" (DP)":""));
     b.onclick=()=>go(i);g.appendChild(b);
   });
+  const z=nav.querySelector("#endzone");
+  if(examRun){
+    if(!endAsk){z.appendChild(btn("Terminer l'épreuve","primary wide",()=>{endAsk=true;renderNav()}))}
+    else{
+      const left=L.filter(q=>!st(q).done).length;
+      z.innerHTML=`<p class="hint" style="margin:14px 0 8px">${left?`Il reste ${left} question${left>1?"s":""} non validée${left>1?"s":""}. `:""}Terminer et voir la correction ?</p>`;
+      const r=document.createElement("div");r.className="act";r.style.margin="0";
+      r.appendChild(btn("Oui, terminer","primary",finishExam));r.appendChild(btn("Continuer","",()=>{endAsk=false;renderNav()}));z.appendChild(r);
+    }
+  }
 }
 function go(i){
   if(i<0||i>=L.length)return;
-  cur=i;UI.id=L[i].id;saveUI();renderNav();renderQ();
+  cur=i;UI.id=L[i].id;V="q";saveUI();renderNav();renderMain();
   const t=document.querySelector(".tile.cur");if(t&&t.scrollIntoView)t.scrollIntoView({block:"nearest"});
-  window.scrollTo({top:0});
-  $("nav").classList.remove("open");
+  window.scrollTo({top:0});$("nav").classList.remove("open");
 }
 function btn(t,c,fn,dis){const b=document.createElement("button");b.type="button";b.className="btn "+(c||"");b.textContent=t;b.onclick=fn;if(dis)b.disabled=true;return b}
-function renderQ(){
+function renderMain(){
   const m=$("main");m.innerHTML="";
+  if(M==="exam"&&!E)return startCard(m);
+  if(M==="exam"&&fin()&&V==="result")return resultCard(m);
   if(!L.length){m.innerHTML=`<div class="card empty">Aucune question ici.${UI.st==="err"?" Pas d'erreur pour l'instant.":""}</div>`;return}
-  const q=L[cur], s=S[q.id]||{sel:"",done:false}, dp=isDP(q);
+  renderQ(m);
+}
+function renderQ(m){
+  const q=L[cur],s=st(q),dp=isDP(q),rev=reveal(q),lock=locked(q),ex=M==="exam";
   const c=document.createElement("article");c.className="card";
   let res="";
-  if(s.done){const g=grade(q,s),d=discord(q,s.sel||"");res=`<span class="res ${g===1?"ok":g>0?"mid":"ko"}">${d===0?"Juste":d+" discordance"+(d>1?"s":"")} · ${fmt(g)} pt</span>`}
+  if(rev){const g=gradeOf(q),d=discord(q,s.sel||"");res=`<span class="res ${g===1?"ok":g>0?"mid":"ko"}">${d===0?"Juste":d+" discordance"+(d>1?"s":"")} · ${fmt(g)} pt</span>`}
   let h=`<div class="qh"><span class="qn">Question ${cur+1} / ${L.length}</span><span class="chip${dp?" dp":""}">${dp?esc(q.n):"Question isolée"}</span><span class="tag" style="background:var(--${q.m})">${MAT[q.m]}</span><span class="src">${esc(q.c)}</span>${res}</div>`;
   if(q.ctx||(q.ctxim&&q.ctxim.length))h+=`<div class="dossier"><span class="lab">Dossier progressif</span>${q.ctx?esc(q.ctx):""}${(q.ctxim||[]).map(u=>`<img src="${u}" loading="lazy" alt="Figure du dossier">`).join("")}</div>`;
   h+=`<p class="qt">${esc(q.q)}</p>`;
   if(q.imgs&&q.imgs.length)h+=`<figure><figcaption>Figure de l'énoncé</figcaption>${q.imgs.map(u=>`<img src="${u}" loading="lazy" alt="Figure de la question">`).join("")}</figure>`;
-  h+=`<p class="hint">${s.done?"":"Coche toutes les propositions justes."}</p>`;
+  let hint="";
+  if(!rev){hint="Coche toutes les propositions justes."+(ex?(dp&&s.done?" Dossier progressif : ta réponse est validée et verrouillée.":(s.done?" Tu peux encore modifier ta réponse jusqu'à la fin de l'épreuve.":" La correction s'affichera à la fin de l'épreuve.")):"")}
+  h+=`<p class="hint">${hint}</p>`;
   c.innerHTML=h;
   const Ls=letters(q),hasText=Ls.some(l=>q.o[l]);
-  const opts=document.createElement("div");opts.className="opts"+(hasText?"":" compact")+(s.done?" done":"");opts.setAttribute("role","group");
+  const opts=document.createElement("div");opts.className="opts"+(hasText?"":" compact")+(rev?" done":"");opts.setAttribute("role","group");
   Ls.forEach(l=>{
     const b=document.createElement("button");b.type="button";b.className="opt";b.id="o_"+l;
     b.setAttribute("role","checkbox");b.setAttribute("aria-checked",(s.sel||"").includes(l));b.setAttribute("aria-label","Proposition "+l);
-    const ann=q.x0&&q.x0.includes(l);let ex="";
-    if(s.done){
-      b.disabled=true;
+    const ann=q.x0&&q.x0.includes(l);let exh="";
+    if(lock)b.disabled=true;
+    if(rev){
       const exp=q.e&&q.e[l]?esc(q.e[l]):"";
-      if(ann){b.classList.add("annul");ex=`<span class="ex"><span class="verdict">Item annulé</span>${exp}</span>`}
+      if(ann){b.classList.add("annul");exh=`<span class="ex"><span class="verdict">Item annulé</span>${exp}</span>`}
       else{const t=q.a.includes(l),u=(s.sel||"").includes(l);b.classList.add(t?"t":"f",t===u?"good":"err");
-        ex=`<span class="ex"><span class="verdict">${t?"À cocher":"Ne pas cocher"}${t!==u?(u?" · coché à tort":" · oublié"):""}</span>${exp}</span>`}
+        exh=`<span class="ex"><span class="verdict">${t?"À cocher":"Ne pas cocher"}${t!==u?(u?" · coché à tort":" · oublié"):""}</span>${exp}</span>`}
     }
-    b.innerHTML=`<span class="box">${l}</span>`+((q.o[l]||ex)?`<span class="ot">${esc(q.o[l]||"")}${ex}</span>`:"");
-    if(!s.done)b.onclick=()=>toggle(l);
+    b.innerHTML=`<span class="box">${l}</span>`+((q.o[l]||exh)?`<span class="ot">${esc(q.o[l]||"")}${exh}</span>`:"");
+    if(!lock)b.onclick=()=>toggle(l);
     opts.appendChild(b);
   });
   c.appendChild(opts);
   const act=document.createElement("div");act.className="act";
   act.appendChild(btn("← Précédent","",()=>go(cur-1),cur===0));
-  if(!s.done)act.appendChild(btn("Valider","primary",validate));
-  else if(!dp)act.appendChild(btn("Modifier ma réponse","",()=>{S[q.id]={sel:s.sel||"",done:false};save();renderNav();renderQ()}));
+  const last=cur===L.length-1;
+  if(ex&&!fin()){
+    if(!s.done)act.appendChild(btn(last?"Valider":"Valider et suivant","primary",validate));
+  }else if(M==="train"){
+    if(!s.done)act.appendChild(btn("Valider","primary",validate));
+    else if(!dp)act.appendChild(btn("Modifier ma réponse","",()=>{S[q.id]={sel:s.sel||"",done:false};save();renderNav();renderMain()}));
+  }
   const sp=document.createElement("span");sp.className="sp";act.appendChild(sp);
-  act.appendChild(btn("Suivant →",s.done?"primary":"",()=>go(cur+1),cur===L.length-1));
+  if(ex&&!fin()&&last&&s.done)act.appendChild(btn("Terminer l'épreuve","primary",()=>{endAsk=true;renderNav();document.getElementById("endzone").scrollIntoView({block:"center"})}));
+  else if(ex&&fin()&&last)act.appendChild(btn("Voir le résultat","primary",()=>{V="result";renderNav();renderMain();window.scrollTo({top:0})}));
+  else act.appendChild(btn("Suivant →",(rev||(ex&&s.done))?"primary":"",()=>go(cur+1),last));
   c.appendChild(act);
-  if(s.done){
+  if(rev){
     c.insertAdjacentHTML("beforeend",`<p class="key" style="margin:12px 0 0">Réponse : ${q.a||"—"}${q.x0?" (item "+q.x0+" annulé)":""} · toi : ${s.sel||"aucune case"}</p>`);
-    if(dp)c.insertAdjacentHTML("beforeend",`<div class="lock">Dossier progressif : tu peux revenir consulter cette question, mais ta réponse est verrouillée.</div>`);
+    if(dp&&M==="train")c.insertAdjacentHTML("beforeend",`<div class="lock">Dossier progressif : tu peux revenir consulter cette question, mais ta réponse est verrouillée.</div>`);
     if(q.x)c.insertAdjacentHTML("beforeend",`<div class="note">${esc(q.x)}</div>`);
     if(q.cimgs&&q.cimgs.length)c.insertAdjacentHTML("beforeend",`<figure style="margin-top:12px"><figcaption>Schéma de la correction</figcaption>${q.cimgs.map(u=>`<img src="${u}" loading="lazy" alt="Correction">`).join("")}</figure>`);
     if(q.w)c.insertAdjacentHTML("beforeend",`<div class="warn"><b>Remarque sur la correction.</b> ${esc(q.w)}</div>`);
@@ -277,28 +356,74 @@ function renderQ(){
   m.appendChild(c);
 }
 function toggle(l){
-  const q=L[cur];if(!q)return;const s=S[q.id]||{sel:"",done:false};if(s.done)return;
+  const q=L[cur];if(!q||(M==="exam"&&!E))return;const s=st(q);if(locked(q))return;
   const cu=s.sel||"";const nx=cu.includes(l)?cu.replace(l,""):[...cu+l].sort().join("");
-  S[q.id]={sel:nx,done:false};save();
+  setSt(q,{sel:nx,done:s.done});
   const b=$("o_"+l);if(b)b.setAttribute("aria-checked",nx.includes(l));
   renderNav();
 }
 function validate(){
-  const q=L[cur];if(!q)return;
-  S[q.id]={sel:(S[q.id]&&S[q.id].sel)||"",done:true};save();renderNav();renderQ();
+  const q=L[cur];if(!q||locked(q))return;
+  const s=st(q);setSt(q,{sel:s.sel||"",done:true});
+  if(M==="exam"&&cur<L.length-1){go(cur+1)}else{renderNav();renderMain()}
 }
 
-/* ---------- chrono ---------- */
-let t0=0,acc=0,tm=null;
-function tick(){const s=Math.floor((acc+(tm?Date.now()-t0:0))/1000);$("chrono").textContent="⏱ "+String(Math.floor(s/3600)?Math.floor(s/3600)+":":"")+String(Math.floor(s%3600/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0")}
-$("chrono").onclick=()=>{
-  if(tm){acc+=Date.now()-t0;clearInterval(tm);tm=null;$("chrono").classList.remove("run")}
-  else{t0=Date.now();tm=setInterval(tick,500);$("chrono").classList.add("run")}
-  tick();
-};
-$("chrono").oncontextmenu=e=>{e.preventDefault();acc=0;t0=Date.now();tick()};
+/* ----- mode examen ----- */
+function startCard(m){
+  const n=L.length;
+  const scope=(UI.ep==="all"?"tous les chapitres":(EP.find(e=>e.id===UI.ep)||{title:""}).title)+(UI.yr==="all"?"":" · "+UI.yr);
+  m.innerHTML=`<div class="card start"><h2>Mode examen</h2>
+  <p class="lead">Tu réponds comme le jour J : tu valides et tu passes à la question suivante, sans voir la correction. Elle s'affiche d'un coup à la fin de l'épreuve.</p>
+  <ul>
+    <li>Chrono lancé dès que tu commences.</li>
+    <li>Questions isolées : tu peux revenir les modifier jusqu'à la fin.</li>
+    <li>Dossiers progressifs (DP) : tu peux relire une question validée, mais plus changer ta réponse.</li>
+    <li>Choisis le chapitre, l'année et l'ordre avec les menus du haut avant de commencer.</li>
+  </ul>
+  <p class="scope"><b>${n}</b> question${n>1?"s":""} · ${esc(scope)}</p></div>`;
+  const a=document.createElement("div");a.className="act";a.style.marginTop="22px";
+  a.appendChild(btn(n?"Commencer l'épreuve":"Aucune question avec ces filtres","primary",startExam,!n));
+  m.querySelector(".card").appendChild(a);
+}
+function startExam(){
+  if(!L.length)return;
+  E={ids:L.map(q=>q.id),a:{},fin:false,el:0};
+  CK.exam.acc=0;CK.exam.run=false;ckStart("exam");
+  V="q";endAsk=false;UI.id=L[0].id;saveE();compute();saveUI();renderAll();
+}
+function finishExam(){
+  ckStop("exam");E.fin=true;saveE();endAsk=false;V="result";renderAll();window.scrollTo({top:0});
+}
+function newExam(){E=null;V="q";endAsk=false;CK.exam.acc=0;CK.exam.run=false;saveE();UI.id=null;compute();saveUI();renderAll()}
+function resultCard(m){
+  let pts=0,j=0,p=0,k=0;
+  L.forEach(q=>{const g=gradeOf(q);if(g==null)return;pts+=g;if(g===1)j++;else if(g>0)p++;else k++});
+  const n=L.length,pct=n?Math.round(pts/n*100):0;
+  const c=document.createElement("div");c.className="card start";
+  c.innerHTML=`<h2>Épreuve terminée</h2>
+  <div class="big"><b>${fmt(pts)}</b><span> / ${n} pts</span><em>${pct} %</em></div>
+  <div class="stats"><span class="res ok">${j} juste${j>1?"s":""}</span><span class="res mid">${p} partielle${p>1?"s":""}</span><span class="res ko">${k} fausse${k>1?"s":""}</span><span class="chip">⏱ ${clock(E.el||0)}</span></div>
+  <p class="lead">Clique sur un numéro à gauche pour voir la correction détaillée, ou utilise les boutons ci-dessous.</p>`;
+  const a=document.createElement("div");a.className="act";
+  a.appendChild(btn("Voir la correction","primary",()=>go(0)));
+  const fi=L.findIndex(q=>{const g=gradeOf(q);return g!=null&&g<1});
+  if(fi>=0)a.appendChild(btn("Première erreur","",()=>go(fi)));
+  const sp=document.createElement("span");sp.className="sp";a.appendChild(sp);
+  a.appendChild(btn("Nouvelle épreuve","",newExam));
+  c.appendChild(a);m.appendChild(c);
+}
+function setMode(m){
+  if(m===M)return;
+  if(M==="exam"&&E&&!E.fin){ckStop("exam");saveE()}
+  M=m;UI.id=null;
+  if(M==="exam"&&E&&!E.fin)ckStart("exam");
+  V=(M==="exam"&&E&&E.fin)?"result":"q";endAsk=false;
+  compute();saveUI();renderAll();
+}
 
-/* ---------- divers ---------- */
+/* ----- divers ----- */
+$("mTrain").onclick=()=>setMode("train");
+$("mExam").onclick=()=>setMode("exam");
 $("fChap").onchange=e=>{UI.ep=e.target.value;UI.id=null;refilter()};
 $("fYear").onchange=e=>{UI.yr=e.target.value;UI.id=null;refilter()};
 $("fState").onchange=e=>{UI.st=e.target.value;UI.id=null;refilter()};
@@ -308,7 +433,7 @@ function resetUI(){
   const z=$("resetZone");z.innerHTML=`<button class="tbtn" id="reset" type="button">Effacer mes réponses</button>`;
   $("reset").onclick=()=>{
     const sc=UI.ep==="all"?"de tous les chapitres":"de ce chapitre";
-    z.innerHTML=`<span class="confirm">Effacer ${sc} ? <button class="btn primary" id="yes" type="button">Oui</button><button class="btn" id="no" type="button">Non</button></span>`;
+    z.innerHTML=`<span class="confirm">Effacer ${sc} (entraînement) ? <button class="btn primary" id="yes" type="button">Oui</button><button class="btn" id="no" type="button">Non</button></span>`;
     $("yes").onclick=()=>{ALL.filter(q=>UI.ep==="all"||q.ep===UI.ep).forEach(q=>delete S[q.id]);save();resetUI();refilter()};
     $("no").onclick=resetUI;
   };
@@ -316,16 +441,21 @@ function resetUI(){
 document.addEventListener("keydown",e=>{
   if(e.ctrlKey||e.metaKey||e.altKey)return;
   const t=e.target.tagName;if(t==="SELECT"||t==="INPUT"||t==="TEXTAREA")return;
+  if(M==="exam"&&(!E||V==="result"))return;
   const k=e.key;
   if(/^[a-eA-E]$/.test(k)){toggle(k.toUpperCase());e.preventDefault()}
-  else if(k==="Enter"){const q=L[cur];if(q&&!(S[q.id]&&S[q.id].done)){validate();e.preventDefault()}}
+  else if(k==="Enter"){const q=L[cur];if(q&&!reveal(q)&&!st(q).done){validate();e.preventDefault()}}
   else if(k==="ArrowRight"){go(cur+1)}
   else if(k==="ArrowLeft"){go(cur-1)}
 });
 fetch("data.json").then(r=>r.json()).then(D=>{
   EP=D;let gi=0;
-  D.forEach(e=>e.qs.forEach((q,i)=>{q.ep=e.id;q.epTitle=e.title;q.id=e.id+"_"+i;q.gi=gi++;ALL.push(q)}));
-  buildFilters();resetUI();compute();renderAll();tick();
+  D.forEach(e=>e.qs.forEach((q,i)=>{q.ep=e.id;q.epTitle=e.title;q.id=e.id+"_"+i;q.gi=gi++;ALL.push(q);BY[q.id]=q}));
+  if(E&&(!E.ids||!E.ids.every(id=>BY[id])))E=null;
+  if(E&&!E.fin){CK.exam.acc=E.el||0}
+  if(M==="exam"&&E&&!E.fin)ckStart("exam");
+  if(M==="exam"&&E&&E.fin)V="result";
+  buildFilters();resetUI();compute();renderAll();
 }).catch(()=>{$("main").innerHTML='<div class="card empty">Impossible de charger les questions. Recharge la page.</div>'});
 </script>
 </body></html>
