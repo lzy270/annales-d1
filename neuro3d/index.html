@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neuro 3D</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+:root{--bg:#f7f5f1;--paper:#fff;--ink:#27303f;--muted:#6c7587;--line:#e6e2da;--pen:#3b63d6;--pen-soft:#eaf0ff;--ok:#1f7a45;--ko:#b42828;--mid:#9a6400;--f:"Nunito",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{font-family:var(--f);color:var(--ink);background:var(--bg);font-size:15px;line-height:1.55;overflow:hidden}
+button{font:inherit;color:inherit}
+.app{display:grid;grid-template-rows:auto 1fr;height:100%}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-left,0px));padding-top:calc(10px + env(safe-area-inset-top,0px));background:#fff;border-bottom:1px solid var(--line)}
+.top h1{margin:0;font-size:1.2rem;font-weight:800;color:var(--pen)}.top h1 small{display:block;font-size:.72rem;font-weight:600;color:var(--muted)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 15px;font-weight:700;font-size:.88rem;cursor:pointer;color:var(--muted)}
+.tab[aria-pressed="true"]{background:var(--pen);border-color:var(--pen);color:#fff}
+.body{display:grid;grid-template-columns:minmax(0,1fr) 390px;min-height:0}
+.stagewrap{position:relative;min-height:0;min-width:0;background:#13213d}
+#stage{position:absolute;inset:0}#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.lbl{position:absolute;left:0;top:0;white-space:nowrap;font-size:.74rem;font-weight:800;color:#fff;background:rgba(20,30,55,.72);border:1px solid rgba(255,255,255,.28);padding:2px 9px;border-radius:999px;will-change:transform}
+.lbl.click{pointer-events:auto;cursor:pointer}.lbl.on{background:var(--pen);border-color:#fff}.lbl.red{background:#b42828}
+.hud{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:8px;max-width:calc(100% - 24px)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.vbtn{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:999px;padding:5px 12px;font-size:.78rem;font-weight:700;cursor:pointer;backdrop-filter:blur(4px)}
+.vbtn:hover,.vbtn[aria-pressed="true"]{background:rgba(255,255,255,.34)}
+.ctrl{position:absolute;left:12px;bottom:12px;display:flex;gap:14px;flex-wrap:wrap;align-items:center;background:rgba(15,25,50,.72);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:9px 14px;color:#fff;font-size:.78rem;font-weight:700;max-width:calc(100% - 24px)}
+.ctrl label{display:flex;align-items:center;gap:8px}.ctrl input[type=range]{width:110px;accent-color:#8aa6ff}
+.panel{background:var(--paper);border-left:1px solid var(--line);overflow:auto;padding:20px 22px 40px;min-height:0}
+.panel h2{margin:0 0 4px;font-size:1.3rem;font-weight:800}
+.panel .sub{color:var(--muted);font-size:.85rem;margin:0 0 14px}
+.panel h3{margin:18px 0 8px;font-size:.82rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.panel p{margin:0 0 10px}
+.card{background:var(--bg);border-radius:14px;padding:13px 15px;margin:0 0 10px;font-size:.93rem}
+.card.warn{background:#fbefd8;border-left:4px solid var(--mid)}.card.tip{background:var(--pen-soft);border-left:4px solid var(--pen)}.card.bad{background:#fbe6e4;border-left:4px solid var(--ko)}.card.good{background:#e1f3e8;border-left:4px solid var(--ok)}
+.card b.src{font-size:.7rem;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:2px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 13px;font-size:.85rem;font-weight:700;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--pen);background:var(--pen-soft);color:var(--pen)}
+.chip.red[aria-pressed="true"]{border-color:var(--ko);background:#fbe6e4;color:var(--ko)}
+.pills{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 6px}
+.btn{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:9px 18px;font-weight:700;cursor:pointer}
+.btn.primary{background:var(--pen);border-color:var(--pen);color:#fff}.btn[disabled]{opacity:.4;cursor:default}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.steps{list-style:none;margin:0;padding:0;counter-reset:s}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;padding:9px 10px;border-radius:12px;cursor:pointer;margin-bottom:4px;border:1.5px solid transparent}
+.steps li:hover{background:var(--bg)}
+.steps li.on{background:var(--pen-soft);border-color:var(--pen)}.steps li.cut{opacity:.4}
+.steps li i{font-style:normal;width:26px;height:26px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-weight:800;font-size:.78rem}
+.steps li.on i{background:var(--pen);color:#fff}
+.steps b{display:block;font-size:.92rem}.steps span{display:block;font-size:.85rem;color:var(--muted)}
+canvas.field{width:100%;max-width:340px;display:block;margin:8px auto;background:#fff;border-radius:12px;border:1px solid var(--line)}
+.opt{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:10px 14px;margin:0 0 8px;cursor:pointer;font-weight:600}
+.opt:hover:not([disabled]){border-color:var(--pen)}.opt.ok{background:#e1f3e8;border-color:var(--ok)}.opt.ko{background:#fbe6e4;border-color:var(--ko)}
+.score{font-weight:800;color:var(--pen)}
+.hint{color:var(--muted);font-size:.84rem}
+@media(max-width:900px){body{overflow:auto}.app{height:auto;min-height:100%}.body{grid-template-columns:1fr;grid-template-rows:62vh auto}.panel{border-left:0;border-top:1px solid var(--line)}.ctrl input[type=range]{width:80px}}
+</style></head><body>
+<div class="app">
+  <div class="top">
+    <h1>Neuro 3D<small>Neuro-anatomie interactive · UE8</small></h1>
+    <div class="tabs" id="tabs"></div>
+  </div>
+  <div class="body">
+    <div class="stagewrap">
+      <div id="stage"></div><div id="labels"></div>
+      <div class="hud"><div class="chips" id="views"></div></div>
+      <div class="ctrl" id="ctrl"></div>
+    </div>
+    <aside class="panel" id="panel"></aside>
+  </div>
+</div>
+<script src="vendor/three.min.js"></script>
+<script src="vendor/OrbitControls.js"></script>
+<script src="scene.js"></script>
+<script src="content.js"></script>
+<script src="app.js"></script>
+</body></html>

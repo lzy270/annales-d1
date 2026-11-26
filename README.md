@@ -8,3 +8,6 @@ Deux modes : **Entraînement** (correction après chaque validation) et **Examen
 - **Hors ligne** : télécharge `Annales_D1_hors_ligne.html` et ouvre-le dans ton navigateur (un seul fichier, images incluses).
 
 Chapitres : UE2 génétique, UE8 neuro (anatomie, physiologie, sémiologie, histo-embryo, pharmaco).
+
+## Neuro 3D
+Cerveau 3D interactif (anatomie, vascularisation, voies, nerfs crâniens, LCS, quiz) : `neuro3d/index.html`. Version hors ligne : `neuro3d/Neuro3D_hors_ligne.html`.
