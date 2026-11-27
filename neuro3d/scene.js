@@ -39,27 +39,47 @@ const hex=h=>new T.Color(h);
 /* ---------- hémisphères ---------- */
 const LOBE_COL=["#ea8672","#79b6e6","#8cd08a","#e8c45c"].map(hex);   // frontal, pariétal, temporal, occipital
 const TERR_COL=["#ee7f9a","#f3b84c","#4fb8b1"].map(hex);            // ACA, ACM, ACP
-const NEUTRAL=hex("#d7aaa5");
-function gyri(x,y,z){return .12*(Math.sin(2.9*x+1.2*y+.5*z)*Math.sin(3.3*z-.8*x)+.6*Math.sin(5.1*y+2.3*z)*Math.cos(3.7*x+1.1*y)+.35*Math.sin(6.7*z+2.9*y-3.1*x))}
+const NEUTRAL=hex("#d09d97");
+function hsh(i,j,k){let h=Math.imul(i,73856093)^Math.imul(j,19349663)^Math.imul(k,83492791);h=Math.imul(h^(h>>>15),0x85ebca6b);h^=h>>>13;h=Math.imul(h,0xc2b2ae35);h^=h>>>16;return ((h>>>0)/4294967295)*2-1}
+function vn(x,y,z){const i=Math.floor(x),j=Math.floor(y),k=Math.floor(z),fx=x-i,fy=y-j,fz=z-k,u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy),w=fz*fz*(3-2*fz);
+  const L=(a,b,t)=>a+(b-a)*t;
+  return L(L(L(hsh(i,j,k),hsh(i+1,j,k),u),L(hsh(i,j+1,k),hsh(i+1,j+1,k),u),v),L(L(hsh(i,j,k+1),hsh(i+1,j,k+1),u),L(hsh(i,j+1,k+1),hsh(i+1,j+1,k+1),u),v),w)}
+const sst=(a,b,x)=>{const t=Math.min(1,Math.max(0,(x-a)/(b-a)));return t*t*(3-2*t)};
 function makeHemi(side){
-  const g=new T.SphereGeometry(1,140,100),p=g.attributes.position,n=p.count;
-  const lobe=new Uint8Array(n),terr=new Uint8Array(n);
+  const g=new T.SphereGeometry(1,230,170),p=g.attributes.position,n=p.count;
+  const lobe=new Uint8Array(n),terr=new Uint8Array(n),shade=new Float32Array(n);
+  const off=side>0?0:31.7;
   for(let i=0;i<n;i++){
     const ux=p.getX(i),uy=p.getY(i),uz=p.getZ(i);
     const ul=ux<0?-Math.pow(-ux,.6):ux;
     const lx=ul>=0?ul*3.6:ul*3.0, nar=1-.2*Math.pow(Math.max(uz,0),2);
     let x=side*(3.1+lx*nar), y=.6+(uy>=0?uy*3.9:uy*4.3), z=uz*8.25;
-    const d=gyri(x,y,z), L=Math.hypot(ul,uy,uz)||1;
-    x+=side*d*ul/L*1.4; y+=d*uy/L*1.4; z+=d*uz/L*1.4;
+    // base plus aplatie, pole frontal plus étroit, lobe occipital effilé
+    {const dy=Math.max(0,-1.2-y);y+=.42*dy*Math.min(1,dy/1.6)}
+    const lat=sst(-.1,.55,ux);                       // 0 face médiale, 1 face latérale
+    // sillon latéral (Sylvius)
+    const ysy=-.9-.3*z+.02*z*z, wsy=Math.exp(-Math.pow((y-ysy)/.32,2))*lat*sst(-6.3,-3.5,z)*(1-sst(3.2,4.6,z));
+    // sillon central (Rolando)
+    const zc=1.1-.32*(y-2.2), wce=Math.exp(-Math.pow((z-zc)/.2,2))*sst(1,2.6,y)*sst(-.1,.45,ux)*(1-sst(4.5,5.1,y));
+    // réseau de sillons secondaires
+    const X=x+off,nz=vn(X*.8,y*.8,z*.8)*.62+vn(X*1.6+9,y*1.6,z*1.6)*.3+vn(X*3.2,y*3.2+4,z*3.2)*.12;
+    let gr=Math.exp(-nz*nz/.02)*(.25+.75*lat);
+    gr=Math.max(gr*(1-.7*wsy),wsy*.9,wce);
+    const d=-.3*gr+.09*(1-gr)-.22*wce;
+    const dirx=side*ul,L=Math.hypot(dirx,uy,uz)||1;
+    x+=dirx/L*d;y+=uy/L*d;z+=uz/L*d;
+    // lèvre inférieure du lobe temporal un peu plus bombée
+    if(uy<-.2&&lat>.3&&uz<.6&&uz>-.7){y-=.25*sst(-.2,-.6,uy)}
     p.setXYZ(i,x,y,z);
     const isT=uy<(-.14-.22*uz)&&uz<.62&&uz>-.62;
     lobe[i]=isT?2:(uz>.1?0:(uz>-.5?1:3));
     terr[i]=(lobe[i]===3||(uy<-.45&&uz<.1&&uz>-.6))?2:((ux<-.2||(uy>.55&&ux<.3))?0:1);
+    shade[i]=1-.55*gr+.06*(1-gr);
   }
   g.computeVertexNormals();
   g.setAttribute("color",new T.BufferAttribute(new Float32Array(n*3),3));
-  const m=new T.Mesh(g,new T.MeshStandardMaterial({vertexColors:true,roughness:.75,metalness:0,side:T.DoubleSide,transparent:true,opacity:1,clippingPlanes:[clipPlane]}));
-  m.userData={lobe,terr,side,n};return m;
+  const m=new T.Mesh(g,new T.MeshStandardMaterial({vertexColors:true,roughness:.62,metalness:0,side:T.DoubleSide,transparent:true,opacity:1,clippingPlanes:[clipPlane]}));
+  m.userData={lobe,terr,side,n,shade};return m;
 }
 const hemiL=makeHemi(-1),hemiR=makeHemi(1);
 hemiL.renderOrder=hemiR.renderOrder=5;
@@ -68,13 +88,13 @@ N3.hemis=[hemiL,hemiR];
 const hemiState={mode:"neutral",lobeSel:-1,terrL:[0,0,0],terrR:[0,0,0],terrHi:-1,opacity:1};
 function paintHemis(){
   for(const h of N3.hemis){
-    const {lobe,terr,n}=h.userData,c=h.geometry.attributes.color;
+    const {lobe,terr,n,shade}=h.userData,c=h.geometry.attributes.color;
     for(let i=0;i<n;i++){
       let col;
       if(hemiState.mode==="lobes"){col=LOBE_COL[lobe[i]].clone();if(hemiState.lobeSel>=0&&lobe[i]!==hemiState.lobeSel)col.lerp(hex("#8a8f9c"),.7)}
       else if(hemiState.mode==="terr"){const k=terr[i];col=TERR_COL[k].clone();const lv=(h.userData.side<0?hemiState.terrL:hemiState.terrR)[k];if(lv>0)col.lerp(hex("#3a0f1f"),Math.min(1,lv)*.85);else if(hemiState.terrHi===k)col.lerp(hex("#ffffff"),.25)}
       else col=NEUTRAL.clone();
-      c.setXYZ(i,col.r,col.g,col.b);
+      {const sh=shade[i];c.setXYZ(i,col.r*sh,col.g*sh,col.b*sh)};
     }
     c.needsUpdate=true;
   }
@@ -122,8 +142,22 @@ lg.setAttribute("color",new T.BufferAttribute(lc,3));
 const bsMesh=new T.Mesh(lg,new T.MeshStandardMaterial({vertexColors:true,roughness:.6,transparent:true,opacity:1,side:T.DoubleSide}));
 bsMesh.userData.regOf=regOf;bsMesh.userData.REG=REG;
 bsGroup.add(bsMesh);
+
+const bsDeco=[];
+(function(){
+  const Mc=(c)=>new T.MeshStandardMaterial({color:c,roughness:.6,transparent:true,opacity:1});
+  const put=(m)=>{bsGroup.add(m);bsDeco.push(m);return m};
+  for(const sx of [-1,1]){
+    const py=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(sx*.42,-4.4,.82),new T.Vector3(sx*.3,-5.4,.9),new T.Vector3(sx*.14,-6.7,.62)]),24,.2,10),Mc("#a6dca2"));put(py);
+    const ol=new T.Mesh(new T.SphereGeometry(1,20,16),Mc("#7fc47c"));ol.scale.set(.32,.7,.3);ol.position.set(sx*.82,-5.2,.28);put(ol);
+    const sc=new T.Mesh(new T.SphereGeometry(.3,16,12),Mc("#f2a65a"));sc.position.set(sx*.36,-.7,-.98);put(sc);
+    const ic=new T.Mesh(new T.SphereGeometry(.27,16,12),Mc("#e8944a"));ic.position.set(sx*.34,-1.5,-.95);put(ic);
+    const cp=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(sx*.55,-1.7,.55),new T.Vector3(sx*.95,-.6,.5),new T.Vector3(sx*1.6,.9,.2)]),20,.42,10),Mc("#f2a65a"));put(cp);
+    const mb=new T.Mesh(new T.SphereGeometry(.2,12,10),Mc("#f3e3b0"));mb.position.set(sx*.28,-1.0,1.12);put(mb);
+  }
+})();
 N3.bstem={group:bsGroup,mesh:bsMesh,REG};
-N3.setBsOpacity=o=>{bsMesh.material.opacity=o;bsMesh.material.depthWrite=o>.97};
+N3.setBsOpacity=o=>{bsMesh.material.opacity=o;bsMesh.material.depthWrite=o>.97;bsDeco.forEach(m=>{m.material.opacity=o;m.material.depthWrite=o>.97})};
 
 /* ---------- noyaux gris, corps calleux, capsule, hippocampe ---------- */
 const deep=new T.Group();scene.add(deep);N3.deep={group:deep,items:{}};
@@ -131,15 +165,15 @@ function add(id,m,both){deep.add(m);(N3.deep.items[id]=N3.deep.items[id]||[]).pu
 for(const s of [-1,1]){
   add("thalamus",ell([s*1.25,.6,-.5],[1.0,.85,1.4],"#e6a77a"));
   add("caude",ell([s*1.95,2.3,1.9],[.8,.8,.95],"#7bc4a8"));
-  add("caude",tubeFrom([V(s*2.2,2.6,.6),V(s*2.5,2.8,-1.4),V(s*3.2,1.6,-2.8),V(s*4.0,-.4,-2.2),V(s*4.2,-1.8,-.4)],.3,"#7bc4a8"));
+  add("caude",tubeFrom([V(s*2.2,2.6,.6),V(s*2.5,2.8,-1.4),V(s*3.2,1.6,-2.8),V(s*4.0,-.4,-2.2),V(s*4.2,-1.8,-.4)],.2,"#7bc4a8"));
   add("lenticulaire",ell([s*3.4,.6,.5],[.8,1.2,1.7],"#e58f9f"));
   add("pallidum",ell([s*2.75,.55,.45],[.5,.8,1.0],"#d1596f"));
-  add("hippocampe",tubeFrom([V(s*3.6,-2.3,.9),V(s*4.3,-2.4,-.6),V(s*3.9,-1.9,-2.4),V(s*2.9,-.8,-3.7)],.32,"#a58bd6"));
+  add("hippocampe",tubeFrom([V(s*3.6,-2.3,.9),V(s*4.3,-2.4,-.6),V(s*3.9,-1.9,-2.4),V(s*2.9,-.8,-3.7)],.24,"#a58bd6"));
   add("amygdale",ell([s*3.7,-2.4,1.2],[.55,.5,.55],"#a58bd6"));
   const cap=new T.Group();
-  const post=new T.Mesh(new T.BoxGeometry(.45,2.0,2.2),mat("#f2e2a0",{transparent:true,opacity:.85}));post.position.set(s*2.45,.9,-.55);post.rotation.y=s*.35;cap.add(post);
-  const gen=new T.Mesh(new T.BoxGeometry(.45,1.8,.9),mat("#f2e2a0",{transparent:true,opacity:.85}));gen.position.set(s*1.95,1.2,1.05);gen.rotation.y=-s*.4;cap.add(gen);
-  const ant=new T.Mesh(new T.BoxGeometry(.45,1.8,1.5),mat("#f2e2a0",{transparent:true,opacity:.85}));ant.position.set(s*2.4,1.5,2.2);ant.rotation.y=s*.55;cap.add(ant);
+  const post=new T.Mesh(new T.SphereGeometry(1,28,20),mat("#f2e2a0",{transparent:true,opacity:.85}));post.scale.set(.26,1.1,1.2);post.position.set(s*2.45,.9,-.55);post.rotation.y=s*.35;cap.add(post);
+  const gen=new T.Mesh(new T.SphereGeometry(1,28,20),mat("#f2e2a0",{transparent:true,opacity:.85}));gen.scale.set(.26,.95,.5);gen.position.set(s*1.95,1.2,1.05);gen.rotation.y=-s*.4;cap.add(gen);
+  const ant=new T.Mesh(new T.SphereGeometry(1,28,20),mat("#f2e2a0",{transparent:true,opacity:.85}));ant.scale.set(.26,.95,.8);ant.position.set(s*2.4,1.5,2.2);ant.rotation.y=s*.55;cap.add(ant);
   cap.traverse(o=>{if(o.isMesh)o.userData.sid="capsule"});deep.add(cap);(N3.deep.items.capsule=N3.deep.items.capsule||[]).push(post,gen,ant);
 }
 const cc=tubeFrom([V(0,1.4,-3.3),V(0,2.8,-2.0),V(0,3.4,.3),V(0,3.0,2.4),V(0,1.9,3.5)],.38,"#f4f0e6");cc.scale.x=9;
